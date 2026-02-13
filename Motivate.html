@@ -1,0 +1,1568 @@
+<!--
+Save this as index.html and open in browser
+App: Daily Motivation Photo Quote Generator
+Everything is fully offline in a single HTML file (no frameworks, no CDNs, no APIs).
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Daily Motivation Photo Quote Generator</title>
+<style>
+  :root{
+    --bg: #0b0e13;
+    --panel: #11151c;
+    --panel-2: #171c24;
+    --text: #e9eef4;
+    --muted: #9fb0c3;
+    --accent: #7bc4ff;
+    --accent-2:#7fffaf;
+    --danger:#ff6b6b;
+    --shadow: rgba(0,0,0,0.55);
+    --ring: rgba(123,196,255,.5);
+    --border: #243040;
+  }
+  [data-theme="light"]{
+    --bg:#f6f8fb;
+    --panel:#ffffff;
+    --panel-2:#f2f6fb;
+    --text:#0b1321;
+    --muted:#4a5a6b;
+    --accent:#005fcc;
+    --accent-2:#1aa36f;
+    --danger:#c73636;
+    --shadow: rgba(0,0,0,0.1);
+    --ring: rgba(0,95,204,.2);
+    --border:#e1e6ef;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    transition: background .3s ease, color .3s ease;
+  }
+
+  .app{
+    min-height:100%;
+    display:grid;
+    grid-template-rows:auto 1fr auto;
+  }
+
+  header{
+    position:sticky; top:0; z-index:3;
+    background: linear-gradient(180deg, var(--panel) 0%, color-mix(in oklab, var(--panel), transparent) 100%);
+    border-bottom:1px solid var(--border);
+    box-shadow: 0 10px 30px var(--shadow);
+  }
+  .header-inner{
+    max-width:1200px; margin:0 auto; padding:14px 16px; display:flex; gap:12px; align-items:center; justify-content:space-between;
+  }
+  .brand{display:flex; align-items:center; gap:10px}
+  .logo{
+    width:34px; height:34px; border-radius:8px;
+    background: conic-gradient(from 180deg at 50% 50%, #7bc4ff, #7fffaf, #ffd37b, #7bc4ff);
+    box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--bg), transparent 30%);
+  }
+  h1{font-size:16px; margin:0; letter-spacing:.3px}
+  .actions{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .btn{
+    appearance:none; border:1px solid var(--border);
+    background:linear-gradient(180deg, var(--panel-2), var(--panel));
+    color:var(--text);
+    padding:8px 12px; border-radius:10px; cursor:pointer;
+    transition: transform .06s ease, background .2s ease, border-color .2s ease, box-shadow .2s ease;
+    display:inline-flex; align-items:center; gap:8px; font-weight:600;
+  }
+  .btn:hover{transform:translateY(-1px); border-color: color-mix(in oklab, var(--accent), var(--border) 60%);}
+  .btn:active{transform:translateY(0)}
+  .btn.primary{background: linear-gradient(180deg, color-mix(in oklab, var(--accent), #fff 85%), var(--accent)); color:#051424; border-color: color-mix(in oklab, var(--accent), #000 15%); box-shadow: 0 5px 20px color-mix(in oklab, var(--accent), transparent 80%);}
+  .btn.success{background: linear-gradient(180deg, color-mix(in oklab, var(--accent-2), #fff 85%), var(--accent-2)); color:#062117; border-color: color-mix(in oklab, var(--accent-2), #000 15%); box-shadow: 0 5px 20px color-mix(in oklab, var(--accent-2), transparent 80%);}
+  .btn.danger{background: linear-gradient(180deg, color-mix(in oklab, var(--danger), #fff 85%), var(--danger)); color:#fff; border-color: color-mix(in oklab, var(--danger), #000 15%); box-shadow: 0 5px 20px color-mix(in oklab, var(--danger), transparent 80%);}
+
+  .layout{
+    max-width:1200px; margin:16px auto; padding:0 16px;
+    display:grid; grid-template-columns: 320px 1fr; gap:16px;
+  }
+  @media (max-width: 980px){
+    .layout{grid-template-columns: 1fr; }
+  }
+
+  .card{
+    background: linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--border);
+    border-radius:14px;
+    box-shadow: 0 15px 45px var(--shadow);
+  }
+  .panel{padding:14px}
+  .panel h2{font-size:14px; margin:0 0 6px 0; color:var(--muted); font-weight:700; letter-spacing:.4px; text-transform:uppercase}
+  .controls{display:flex; flex-direction:column; gap:12px}
+
+  .group{border:1px dashed color-mix(in oklab, var(--border), transparent 25%); border-radius:12px; padding:12px}
+  .row{display:grid; grid-template-columns: 1fr 1fr; gap:8px}
+  .row-3{display:grid; grid-template-columns: repeat(3, 1fr); gap:8px}
+  .row-4{display:grid; grid-template-columns: repeat(4, 1fr); gap:8px}
+  .field{display:flex; flex-direction:column; gap:6px}
+  .field label{font-weight:600; color:var(--muted); font-size:12px}
+  .field input[type="text"], .field select, .field input[type="number"]{
+    padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--panel); color:var(--text); outline:none;
+  }
+  .field input[type="color"]{width:100%; height:36px; padding:0; border:none; background:transparent}
+  .field input[type="range"]{width:100%}
+  .toggle{
+    display:flex; gap:10px; align-items:center; justify-content:space-between; padding:8px 10px; border:1px solid var(--border); border-radius:10px; background:var(--panel);
+  }
+  .toggle input{scale:1.2}
+
+  .dropzone{
+    border:2px dashed color-mix(in oklab, var(--accent), var(--border) 60%);
+    border-radius:12px; padding:14px; text-align:center; color:var(--muted); background: linear-gradient(180deg, color-mix(in oklab, var(--panel-2), transparent 25%), var(--panel));
+    transition: border-color .2s ease, background .2s ease;
+  }
+  .dropzone.dragover{
+    border-color: var(--accent);
+    background: linear-gradient(180deg, color-mix(in oklab, var(--accent), transparent 85%), var(--panel));
+  }
+
+  .canvas-wrap{
+    position:relative; padding:10px;
+  }
+  .canvas-bar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between; padding:10px 12px; border-bottom:1px solid var(--border);
+  }
+  .canvas-area{
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    min-height:300px;
+  }
+  canvas#mainCanvas{
+    width:100%; height:auto; max-height:70vh; background:#0e1420; border-radius:12px; border:1px solid var(--border);
+    box-shadow: 0 20px 60px var(--shadow);
+    transition: box-shadow .3s ease, transform .2s ease;
+  }
+  .overlay-spinner{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center; backdrop-filter: blur(1px);
+  }
+  .overlay-spinner.show{display:flex}
+  .spinner{
+    width:38px; height:38px; border-radius:50%; border:4px solid color-mix(in oklab, var(--accent), transparent 70%); border-top-color: var(--accent); animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .video-wrap{display:none; gap:8px; align-items:center; justify-content:center; padding:10px}
+  .video-wrap.show{display:flex}
+  video{max-width:100%; border-radius:10px; border:1px solid var(--border)}
+
+  .message{
+    margin:10px 0 0 0; padding:10px 12px; border-radius:10px; font-weight:600;
+    border:1px solid var(--border);
+  }
+  .message.error{background: color-mix(in oklab, var(--danger), transparent 85%); color: color-mix(in oklab, var(--danger), black 10%); border-color: color-mix(in oklab, var(--danger), transparent 40%);}
+  .message.info{background: color-mix(in oklab, var(--accent), transparent 90%); color: color-mix(in oklab, var(--accent), black 40%); border-color: color-mix(in oklab, var(--accent), transparent 40%);}
+  .sr-only{position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
+
+  .kbd{
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size:12px; background: var(--panel-2); border:1px solid var(--border); padding:2px 6px; border-radius:6px;
+  }
+
+  .footer{
+    opacity:.8; font-size:12px; color:var(--muted); text-align:center; padding:14px;
+  }
+
+  .hint{
+    font-size:12px; color:var(--muted);
+  }
+
+  .help{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center; color:var(--muted); font-size:12px;
+  }
+
+  .crop-tools{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  }
+
+  /* Crop overlay & handles drawn on canvas; helpers below for preview box */
+  .crop-preview{
+    padding:12px; display:flex; flex-direction:column; gap:6px;
+  }
+  #cropPreview{
+    width:100%; max-width:260px; border:1px dashed var(--border); border-radius:10px; background: #0f1624;
+  }
+
+  .grid-slim{
+    display:grid; grid-template-columns: 1fr 1fr; gap:8px;
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app" data-theme="dark">
+  <header role="banner" aria-label="App header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>Daily Motivation Photo Quote Generator</h1>
+      </div>
+      <div class="actions">
+        <button class="btn" id="btnDark" title="Toggle dark mode (D)">🌓 Theme</button>
+        <button class="btn" id="btnGradient" title="Random background gradient">🎨 Gradient</button>
+        <button class="btn primary" id="btnGenerateQuote" title="Generate new quote (G)">✨ New Quote</button>
+        <button class="btn" id="btnRandomStyle" title="Randomize style (R)">⚡ Random Style</button>
+        <button class="btn success" id="btnDownload" title="Download (Ctrl/Cmd+S)">⬇️ Download</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout" role="main">
+    <!-- Controls -->
+    <section class="card panel" aria-label="Controls">
+      <div class="controls">
+        <div class="group" aria-label="Import image">
+          <h2>Image</h2>
+          <div class="dropzone" id="dropzone" tabindex="0" aria-label="Drag and drop image here">
+            <div><strong>Drop Image</strong> here or click to upload</div>
+            <div class="hint">Supported: JPG, PNG, GIF, WebP. Works offline.</div>
+            <input class="sr-only" type="file" id="fileInput" accept="image/*" aria-label="Upload image from device"/>
+          </div>
+          <div class="row">
+            <button class="btn" id="btnOpenPicker">📁 Choose File</button>
+            <button class="btn" id="btnStartCam" title="Start webcam">📷 Use Webcam</button>
+          </div>
+          <div class="video-wrap" id="videoWrap" aria-live="polite">
+            <video id="video" autoplay playsinline></video>
+            <button class="btn success" id="btnCapture">📸 Capture</button>
+            <button class="btn" id="btnStopCam">✖️ Stop</button>
+          </div>
+          <div id="fileError" class="message error" style="display:none" role="alert" aria-live="assertive"></div>
+        </div>
+
+        <div class="group" aria-label="Quote settings">
+          <h2>Quote</h2>
+          <div class="row">
+            <div class="field">
+              <label for="category">Category</label>
+              <select id="category" aria-label="Select quote category">
+                <option value="All">All</option>
+                <option value="Confidence">Confidence</option>
+                <option value="Success">Success</option>
+                <option value="Self Love">Self Love</option>
+                <option value="Fitness">Fitness</option>
+                <option value="Study">Study</option>
+                <option value="Work Motivation">Work Motivation</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="textAlign">Text Alignment</label>
+              <select id="textAlign" aria-label="Text alignment">
+                <option value="center">Center</option>
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="quoteText">Quote (editable)</label>
+            <input type="text" id="quoteText" aria-label="Quote text" placeholder="Your motivational quote appears here…" />
+          </div>
+          <div class="help">Tip: Drag the quote directly on the canvas to reposition. Use arrow keys to nudge (<span class="kbd">↑</span> <span class="kbd">↓</span> <span class="kbd">←</span> <span class="kbd">→</span>). Hold <span class="kbd">Shift</span> to nudge x5.</div>
+        </div>
+
+        <div class="group" aria-label="Text style">
+          <h2>Text Style</h2>
+          <div class="row">
+            <div class="field">
+              <label for="fontFamily">Font Family</label>
+              <select id="fontFamily" aria-label="Font family">
+                <option>Arial</option>
+                <option>Verdana</option>
+                <option>Trebuchet MS</option>
+                <option>Georgia</option>
+                <option>Times New Roman</option>
+                <option>Courier New</option>
+                <option>System UI</option>
+                <option>Impact</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fontSize">Text Size: <span id="fontSizeVal">48</span>px</label>
+              <input type="range" id="fontSize" min="16" max="120" value="48" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="textColor">Text Color</label>
+              <input type="color" id="textColor" value="#ffffff" />
+            </div>
+            <div class="field">
+              <label for="lineHeight">Line Height: <span id="lineHeightVal">1.2</span></label>
+              <input type="range" id="lineHeight" min="1" max="2" step="0.05" value="1.2" />
+            </div>
+          </div>
+          <div class="toggle">
+            <label for="textShadow">Text Shadow</label>
+            <input type="checkbox" id="textShadow" checked />
+          </div>
+          <div class="toggle">
+            <label for="overlayToggle">Background Overlay Behind Text</label>
+            <input type="checkbox" id="overlayToggle" />
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="overlayColor">Overlay Color</label>
+              <input type="color" id="overlayColor" value="#000000" />
+            </div>
+            <div class="field">
+              <label for="overlayOpacity">Overlay Opacity: <span id="overlayOpacityVal">0.45</span></label>
+              <input type="range" id="overlayOpacity" min="0" max="1" step="0.01" value="0.45" />
+            </div>
+          </div>
+        </div>
+
+        <div class="group" aria-label="Image adjustments">
+          <h2>Image Adjustments</h2>
+          <div class="row">
+            <div class="field">
+              <label for="brightness">Brightness: <span id="brightnessVal">100</span>%</label>
+              <input type="range" id="brightness" min="50" max="150" value="100"/>
+            </div>
+            <div class="field">
+              <label for="contrast">Contrast: <span id="contrastVal">100</span>%</label>
+              <input type="range" id="contrast" min="50" max="150" value="100"/>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="rotation">Rotate: <span id="rotationVal">0</span>°</label>
+              <input type="range" id="rotation" min="0" max="359" value="0"/>
+            </div>
+            <div class="field">
+              <label>&nbsp;</label>
+              <div class="row-3">
+                <button class="btn" id="btnRot90">⤾ 90°</button>
+                <button class="btn" id="btnRot180">⟳ 180°</button>
+                <button class="btn" id="btnRot270">⤿ 270°</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="group" aria-label="Crop">
+          <h2>Crop</h2>
+          <div class="crop-tools">
+            <button class="btn" id="btnToggleCrop">✂️ Crop Mode</button>
+            <button class="btn" id="btnApplyCrop">✅ Apply</button>
+            <button class="btn" id="btnCancelCrop">↩️ Reset Crop</button>
+          </div>
+          <div class="message info" id="cropNote" style="display:none">Crop works when rotation is <strong>0°</strong> for simplicity.</div>
+          <div class="crop-preview">
+            <label for="cropPreview">Crop Preview</label>
+            <canvas id="cropPreview" width="260" height="160" aria-label="Crop preview"></canvas>
+          </div>
+        </div>
+
+        <div class="group" aria-label="Presets & Reset">
+          <h2>Presets</h2>
+          <div class="row">
+            <button class="btn" id="btnReset">🧹 Reset Settings</button>
+            <button class="btn danger" id="btnHardReset">🗑️ Reset All</button>
+          </div>
+          <div class="help">
+            <strong>Shortcuts:</strong>
+            <span class="kbd">G</span> New Quote
+            <span class="kbd">R</span> Random Style
+            <span class="kbd">D</span> Theme
+            <span class="kbd">Ctrl/Cmd+S</span> Download
+            <span class="kbd">+</span>/<span class="kbd">-</span> Text Size
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Canvas & Preview -->
+    <section class="card">
+      <div class="canvas-wrap">
+        <div class="canvas-bar">
+          <div class="help">
+            <span>Live Preview</span>
+            <span class="hint">Drag text to move • Double-click canvas to center text</span>
+          </div>
+          <div class="help" id="imageInfo" aria-live="polite"></div>
+        </div>
+        <div class="canvas-area" id="canvasArea">
+          <canvas id="mainCanvas" width="1000" height="1000" role="img" aria-label="Preview canvas with image and quote"></canvas>
+          <div class="overlay-spinner" id="spinner" aria-hidden="true">
+            <div class="spinner" role="progressbar" aria-label="Generating quote…"></div>
+          </div>
+        </div>
+        <div id="canvasMsg" class="message error" style="display:none" role="alert"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Offline • No frameworks • Works by saving as <strong>index.html</strong> and opening in your browser.
+  </footer>
+</div>
+
+<script>
+/* ==========================================================
+   Daily Motivation Photo Quote Generator (Single-file App)
+   - No external libraries, APIs, or fonts
+   - Everything offline
+   ========================================================== */
+
+/* ---------------------------
+   Utility & State
+---------------------------- */
+const $ = sel => document.querySelector(sel);
+const appEl = $('#app');
+const canvas = $('#mainCanvas');
+const ctx = canvas.getContext('2d');
+const spinner = $('#spinner');
+const dropzone = $('#dropzone');
+const fileInput = $('#fileInput');
+const fileError = $('#fileError');
+const videoWrap = $('#videoWrap');
+const video = $('#video');
+const cropPreviewCanvas = $('#cropPreview');
+const cropCtx = cropPreviewCanvas.getContext('2d');
+const imageInfo = $('#imageInfo');
+const canvasMsg = $('#canvasMsg');
+
+const state = {
+  // image & drawing
+  img: null,
+  imgNaturalW: 0,
+  imgNaturalH: 0,
+  canvasW: 1000,
+  canvasH: 1000,
+  // styling
+  fontFamily: 'Arial',
+  fontSize: 48,
+  textColor: '#ffffff',
+  lineHeight: 1.2,
+  textShadow: true,
+  textAlign: 'center',
+  overlayEnabled: false,
+  overlayColor: '#000000',
+  overlayOpacity: 0.45,
+  // quote
+  quote: 'Believe in small steps taken daily.',
+  category: 'All',
+  // placement
+  textX: 500,
+  textY: 500,
+  // image adjustments
+  brightness: 100,
+  contrast: 100,
+  rotation: 0, // degrees
+  // gradient background when no image / also as behind image
+  gradient: randomGradient(),
+  // crop
+  cropMode: false,
+  cropRect: null, // {x,y,w,h} in canvas coordinates (no rotation)
+  draggingText: false,
+  dragOffsetX: 0,
+  dragOffsetY: 0,
+  // crop dragging
+  dragCrop: false,
+  dragHandle: null,
+  // camera
+  stream: null,
+  // flags
+  dirty: true
+};
+
+/* ---------------------------
+   Quotes (120+ original lines)
+---------------------------- */
+const QUOTES = {
+  "Confidence": [
+    "You are allowed to take up space.",
+    "Walk like the ground is thrilled you showed up.",
+    "Confidence grows when promises to yourself are kept.",
+    "You don’t need permission to begin.",
+    "Let your actions be louder than your doubts.",
+    "Small wins become unshakable belief.",
+    "Own your story, even the edits.",
+    "You are the proof that you can.",
+    "Bravery is the seed; action is the sunlight.",
+    "Your pace, your race.",
+    "Self-trust is a muscle—train it daily.",
+    "You have done hard things before.",
+    "Start now; adjust later.",
+    "Be your loudest ally.",
+    "Your opinion of you is the headline.",
+    "Decide you are capable and proceed.",
+    "Wear your progress, not your fear.",
+    "Let your courage set the tone.",
+    "You can be both a work-in-progress and proud.",
+    "Confidence is consistency over time."
+  ],
+  "Success": [
+    "Direction matters more than speed.",
+    "Success follows the persistent, not the perfect.",
+    "Plan in ink, execute in bold.",
+    "Win the day; the future will notice.",
+    "Show up especially when it’s not exciting.",
+    "Start where you are; use what you have; build what you need.",
+    "Consistency outperforms talent left unused.",
+    "Tiny improvements compound into big outcomes.",
+    "Clarity creates momentum.",
+    "Courage invites opportunity.",
+    "You refine by doing, not by waiting.",
+    "Make your goals visible and your excuses invisible.",
+    "Learn, apply, repeat.",
+    "The best time to start was yesterday; the next best is now.",
+    "Progress is a habit disguised as effort.",
+    "Your future self is watching—don’t disappoint them.",
+    "Simplicity turns plans into motion.",
+    "Discipline is a love letter to your dreams.",
+    "Success is stacked boredom well managed.",
+    "Sow effort, reap excellence."
+  ],
+  "Self Love": [
+    "Treat yourself like someone worth caring for—because you are.",
+    "You deserve the kindness you give away.",
+    "Rest is not a reward; it’s a right.",
+    "Say no without a guilt tax.",
+    "You don’t need to be fixed to be worthy.",
+    "Your softness is strength, too.",
+    "You are allowed to take breaks and still be brilliant.",
+    "Celebrate the ordinary magic of today.",
+    "Growth looks like grace in the mirror.",
+    "Make a home out of your heart.",
+    "Your value doesn’t depend on productivity.",
+    "Choose thoughts that choose you back.",
+    "Speak to yourself like a friend would.",
+    "Healing isn’t linear, but it is forward.",
+    "Be gentle; new chapters are delicate.",
+    "You are not behind; you are becoming.",
+    "You are more than the sum of your outcomes.",
+    "Comparison steals the color from your life.",
+    "Let enough be enough today.",
+    "Nourish what makes you feel alive."
+  ],
+  "Fitness": [
+    "One more rep for the future you.",
+    "Strong today, stronger tomorrow.",
+    "Train your mind; your body will follow.",
+    "Progress is earned in quiet minutes.",
+    "Sweat now, shine later.",
+    "Movement is medicine you can give yourself.",
+    "Discomfort is data, not defeat.",
+    "Form first, ego last.",
+    "You don’t need motivation; you need momentum.",
+    "Be patient with your power.",
+    "Your body hears everything your mind says—speak strength.",
+    "Show up for the set you want to skip.",
+    "Discipline fuels endurance.",
+    "Fuel well, move well, rest well.",
+    "Every session is a brick in your foundation.",
+    "Make stamina your superpower.",
+    "Chase consistency over PRs.",
+    "Recovery builds the beast.",
+    "You are not tired—you’re getting stronger.",
+    "Earn the endorphins."
+  ],
+  "Study": [
+    "Study like your questions matter—because they do.",
+    "Depth beats breadth; understand, don’t just remember.",
+    "Focus is a force multiplier.",
+    "Notes now, mastery later.",
+    "Active recall turns effort into memory.",
+    "Break it small; learn it all.",
+    "Teach it to learn it.",
+    "Short focused sessions build long strong knowledge.",
+    "The best study hack is yesterday’s review.",
+    "Curiosity makes hard topics lighter.",
+    "Small pages daily beat giant chapters someday.",
+    "You’re not behind—you’re building.",
+    "Turn distractions into distance.",
+    "Revision is respect for your future self.",
+    "Organize your mind by organizing your notes.",
+    "Understand the why; the how follows.",
+    "Questions are the keys to every chapter.",
+    "Learn the language of the subject first.",
+    "Make mistakes loudly; learn quietly; return stronger.",
+    "Knowledge compounds when partnered with patience."
+  ],
+  "Work Motivation": [
+    "Do the important before the urgent.",
+    "Make today’s output embarrass yesterday’s excuses.",
+    "Clarity at the start saves chaos at the end.",
+    "Move one blocker; gain ten steps.",
+    "Progress beats perfection to the finish line.",
+    "Ship it—feedback is the fastest teacher.",
+    "Protect your deep work like a meeting with your dream.",
+    "Reduce scope, increase speed.",
+    "If it takes two minutes, do it now.",
+    "Document once, benefit forever.",
+    "Communicate early; collaborate often.",
+    "Make your calendar match your priorities.",
+    "Done is a doorway to better.",
+    "Automate the boring; accelerate the brilliant.",
+    "Be reliable—people build on reliability.",
+    "Start ugly, end excellent.",
+    "A clear checklist is half the work.",
+    "Cut noise, keep signal.",
+    "Every deliverable is a reputation point.",
+    "Own the outcome and the learning."
+  ]
+};
+// Ensure minimum 120 quotes:
+const TOTAL_QUOTES = Object.values(QUOTES).reduce((a,arr)=>a+arr.length,0);
+
+/* ---------------------------
+   Elements
+---------------------------- */
+const btnDark = $('#btnDark');
+const btnGenerateQuote = $('#btnGenerateQuote');
+const btnRandomStyle = $('#btnRandomStyle');
+const btnDownload = $('#btnDownload');
+const btnReset = $('#btnReset');
+const btnHardReset = $('#btnHardReset');
+const btnGradient = $('#btnGradient');
+
+const btnStartCam = $('#btnStartCam');
+const btnStopCam = $('#btnStopCam');
+const btnCapture = $('#btnCapture');
+const btnOpenPicker = $('#btnOpenPicker');
+
+const quoteText = $('#quoteText');
+const categorySel = $('#category');
+const fontFamilySel = $('#fontFamily');
+const fontSizeRange = $('#fontSize'); const fontSizeVal = $('#fontSizeVal');
+const textColorInput = $('#textColor');
+const textShadowToggle = $('#textShadow');
+const textAlignSel = $('#textAlign');
+const overlayToggle = $('#overlayToggle');
+const overlayColor = $('#overlayColor');
+const overlayOpacity = $('#overlayOpacity'); const overlayOpacityVal = $('#overlayOpacityVal');
+const lineHeightRange = $('#lineHeight'); const lineHeightVal = $('#lineHeightVal');
+
+const brightnessRange = $('#brightness'); const brightnessVal = $('#brightnessVal');
+const contrastRange = $('#contrast'); const contrastVal = $('#contrastVal');
+const rotationRange = $('#rotation'); const rotationVal = $('#rotationVal');
+const btnRot90 = $('#btnRot90'); const btnRot180 = $('#btnRot180'); const btnRot270 = $('#btnRot270');
+
+const btnToggleCrop = $('#btnToggleCrop');
+const btnApplyCrop = $('#btnApplyCrop');
+const btnCancelCrop = $('#btnCancelCrop');
+const cropNote = $('#cropNote');
+
+/* ---------------------------
+   Local Storage
+---------------------------- */
+const LS_KEY = 'dmqg_settings_v1';
+
+function saveSettings(){
+  const toSave = {
+    theme: appEl.getAttribute('data-theme'),
+    fontFamily: state.fontFamily,
+    fontSize: state.fontSize,
+    textColor: state.textColor,
+    lineHeight: state.lineHeight,
+    textShadow: state.textShadow,
+    textAlign: state.textAlign,
+    overlayEnabled: state.overlayEnabled,
+    overlayColor: state.overlayColor,
+    overlayOpacity: state.overlayOpacity,
+    brightness: state.brightness,
+    contrast: state.contrast,
+    rotation: state.rotation,
+    category: state.category,
+    quote: state.quote,
+    textX: state.textX, textY: state.textY,
+    gradient: state.gradient
+  };
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(toSave)); }catch(e){}
+}
+
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(!raw) return;
+    const s = JSON.parse(raw);
+    if(s.theme) appEl.setAttribute('data-theme', s.theme);
+    state.fontFamily = s.fontFamily ?? state.fontFamily;
+    state.fontSize = s.fontSize ?? state.fontSize;
+    state.textColor = s.textColor ?? state.textColor;
+    state.lineHeight = s.lineHeight ?? state.lineHeight;
+    state.textShadow = s.textShadow ?? state.textShadow;
+    state.textAlign = s.textAlign ?? state.textAlign;
+    state.overlayEnabled = s.overlayEnabled ?? state.overlayEnabled;
+    state.overlayColor = s.overlayColor ?? state.overlayColor;
+    state.overlayOpacity = s.overlayOpacity ?? state.overlayOpacity;
+    state.brightness = s.brightness ?? state.brightness;
+    state.contrast = s.contrast ?? state.contrast;
+    state.rotation = s.rotation ?? state.rotation;
+    state.category = s.category ?? state.category;
+    state.quote = s.quote ?? state.quote;
+    if(typeof s.textX === 'number') state.textX = s.textX;
+    if(typeof s.textY === 'number') state.textY = s.textY;
+    state.gradient = s.gradient ?? state.gradient;
+  }catch(e){}
+}
+
+/* ---------------------------
+   Helpers
+---------------------------- */
+function randomGradient(){
+  const h1 = Math.floor(Math.random()*360);
+  const h2 = (h1 + Math.floor(60+Math.random()*180)) % 360;
+  const c1 = `hsl(${h1} 80% 50%)`;
+  const c2 = `hsl(${h2} 80% 50%)`;
+  const ang = Math.floor(Math.random()*360);
+  return {angle: ang, c1, c2};
+}
+
+function applyPageGradient(){
+  const g = state.gradient;
+  document.body.style.background = `linear-gradient(${g.angle}deg, ${g.c1}, ${g.c2}) fixed`;
+}
+
+function showSpinner(show){
+  spinner.classList.toggle('show', !!show);
+  spinner.setAttribute('aria-hidden', show? 'false':'true');
+}
+
+function showError(msg){
+  fileError.textContent = msg;
+  fileError.style.display = 'block';
+  setTimeout(()=>{ fileError.style.display = 'none'; }, 3500);
+}
+
+function showCanvasMsg(msg){
+  canvasMsg.textContent = msg;
+  canvasMsg.style.display = 'block';
+  setTimeout(()=>{ canvasMsg.style.display = 'none'; }, 2600);
+}
+
+function fitCanvasToContainer(){
+  // Keep canvas internal resolution high; external CSS scales it responsively
+  const rect = $('#canvasArea').getBoundingClientRect();
+  // Keep a square-ish canvas up to container width
+  const maxW = Math.min(1400, Math.max(700, Math.floor(rect.width)));
+  // Use image aspect ratio if present
+  let w = maxW, h = maxW;
+  if(state.img){
+    const aspect = state.imgNaturalW / state.imgNaturalH;
+    if(aspect >= 1){ w = maxW; h = Math.floor(w / aspect); }
+    else { h = Math.min(1000, Math.floor(maxW)); w = Math.floor(h * aspect); }
+  }
+  state.canvasW = Math.max(320, w);
+  state.canvasH = Math.max(320, h);
+  canvas.width = state.canvasW;
+  canvas.height = state.canvasH;
+  state.dirty = true;
+}
+
+function pickRandomQuote(){
+  const cat = state.category;
+  const pool = (cat === 'All')
+    ? Object.values(QUOTES).flat()
+    : QUOTES[cat] || [];
+  if(pool.length === 0) return;
+  const q = pool[Math.floor(Math.random()*pool.length)];
+  state.quote = q;
+  quoteText.value = q;
+  saveSettings();
+}
+
+function setUIFromState(){
+  // Theme button label
+  btnDark.textContent = (appEl.getAttribute('data-theme') === 'dark') ? '🌓 Light' : '🌒 Dark';
+  // Quote + category
+  categorySel.value = state.category;
+  quoteText.value = state.quote;
+  // Style
+  fontFamilySel.value = state.fontFamily;
+  fontSizeRange.value = state.fontSize; fontSizeVal.textContent = state.fontSize;
+  textColorInput.value = state.textColor;
+  textShadowToggle.checked = state.textShadow;
+  textAlignSel.value = state.textAlign;
+  overlayToggle.checked = state.overlayEnabled;
+  overlayColor.value = state.overlayColor;
+  overlayOpacity.value = state.overlayOpacity; overlayOpacityVal.textContent = state.overlayOpacity.toFixed(2);
+  lineHeightRange.value = state.lineHeight; lineHeightVal.textContent = state.lineHeight.toFixed(2);
+  // Adjustments
+  brightnessRange.value = state.brightness; brightnessVal.textContent = state.brightness;
+  contrastRange.value = state.contrast; contrastVal.textContent = state.contrast;
+  rotationRange.value = state.rotation; rotationVal.textContent = state.rotation;
+  // Crop note
+  cropNote.style.display = (state.rotation !== 0) ? 'block' : 'none';
+}
+
+function loadImageFromFile(file){
+  if(!file || !file.type || !file.type.startsWith('image/')){
+    showError('Unsupported file. Please choose an image (JPG, PNG, GIF, WebP).');
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    state.img = img;
+    state.imgNaturalW = img.naturalWidth;
+    state.imgNaturalH = img.naturalHeight;
+    URL.revokeObjectURL(url);
+    fitCanvasToContainer();
+    // Center text
+    state.textX = state.canvasW/2;
+    state.textY = state.canvasH/2;
+    // Generate quote
+    showSpinner(true);
+    setTimeout(()=>{ pickRandomQuote(); showSpinner(false); render(); }, 600);
+    imageInfo.textContent = `Image: ${state.imgNaturalW}×${state.imgNaturalH} • Canvas: ${state.canvasW}×${state.canvasH}`;
+    saveSettings();
+  };
+  img.onerror = () => {
+    URL.revokeObjectURL(url);
+    showError('Could not load image. Please try a different file.');
+  };
+  img.src = url;
+}
+
+function startCamera(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    showError('Webcam not supported in this browser.');
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({video:true})
+    .then(stream=>{
+      state.stream = stream;
+      video.srcObject = stream;
+      videoWrap.classList.add('show');
+    })
+    .catch(()=>{
+      showError('Unable to access camera. Please grant permission.');
+    });
+}
+
+function stopCamera(){
+  if(state.stream){
+    state.stream.getTracks().forEach(t=>t.stop());
+    state.stream = null;
+  }
+  video.srcObject = null;
+  videoWrap.classList.remove('show');
+}
+
+function captureFromVideo(){
+  if(!video.videoWidth || !video.videoHeight){ showError('Camera not ready yet.'); return; }
+  const off = document.createElement('canvas');
+  off.width = video.videoWidth;
+  off.height = video.videoHeight;
+  off.getContext('2d').drawImage(video, 0,0, off.width, off.height);
+  const img = new Image();
+  img.onload = ()=>{
+    state.img = img;
+    state.imgNaturalW = img.naturalWidth;
+    state.imgNaturalH = img.naturalHeight;
+    stopCamera();
+    fitCanvasToContainer();
+    state.textX = state.canvasW/2;
+    state.textY = state.canvasH/2;
+    showSpinner(true);
+    setTimeout(()=>{ pickRandomQuote(); showSpinner(false); render(); }, 600);
+    imageInfo.textContent = `Image: ${state.imgNaturalW}×${state.imgNaturalH} • Canvas: ${state.canvasW}×${state.canvasH}`;
+    saveSettings();
+  };
+  img.src = off.toDataURL('image/png');
+}
+
+/* ---------------------------
+   Drawing
+---------------------------- */
+function applyImageFilters(){
+  const b = state.brightness / 100;
+  const c = state.contrast / 100;
+  ctx.filter = `brightness(${b}) contrast(${c})`;
+}
+
+function clearFilters(){
+  ctx.filter = 'none';
+}
+
+function drawGradientBackground(){
+  const g = ctx.createLinearGradient(0,0, canvas.width, canvas.height);
+  g.addColorStop(0, state.gradient.c1);
+  g.addColorStop(1, state.gradient.c2);
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,canvas.width, canvas.height);
+  ctx.restore();
+}
+
+function drawImageTransformed(){
+  if(!state.img) return;
+  const cw = canvas.width, ch = canvas.height;
+  const iw = state.imgNaturalW, ih = state.imgNaturalH;
+  const scale = Math.min(cw/iw, ch/ih);
+  const drawW = iw * scale;
+  const drawH = ih * scale;
+  const dx = (cw - drawW)/2;
+  const dy = (ch - drawH)/2;
+
+  ctx.save();
+  // rotate around center of canvas
+  ctx.translate(cw/2, ch/2);
+  ctx.rotate(state.rotation * Math.PI/180);
+  ctx.translate(-cw/2, -ch/2);
+  applyImageFilters();
+  ctx.drawImage(state.img, dx, dy, drawW, drawH);
+  clearFilters();
+  ctx.restore();
+}
+
+function wrapTextLines(text, maxWidth){
+  const words = text.split(' ');
+  const lines = [];
+  let line = '';
+  for(const w of words){
+    const test = line ? (line + ' ' + w) : w;
+    const width = ctx.measureText(test).width;
+    if(width > maxWidth && line){
+      lines.push(line);
+      line = w;
+    }else{
+      line = test;
+    }
+  }
+  if(line) lines.push(line);
+  return lines;
+}
+
+function drawRoundedRect(x,y,w,h,r){
+  const rr = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+rr, y);
+  ctx.arcTo(x+w, y, x+w, y+h, rr);
+  ctx.arcTo(x+w, y+h, x, y+h, rr);
+  ctx.arcTo(x, y+h, x, y, rr);
+  ctx.arcTo(x, y, x+w, y, rr);
+  ctx.closePath();
+}
+
+function drawText(){
+  const padding = Math.max(12, Math.floor(state.fontSize*0.35));
+  ctx.save();
+  ctx.font = `600 ${state.fontSize}px "${state.fontFamily}"`;
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = state.textColor;
+  ctx.textAlign = state.textAlign;
+  if(state.textShadow){
+    ctx.shadowColor = 'rgba(0,0,0,.6)';
+    ctx.shadowBlur = Math.max(6, state.fontSize*0.12);
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+  }else{
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+  }
+
+  // Measure and wrap
+  const maxTextWidth = Math.floor(canvas.width * 0.86);
+  const lineHeightPx = state.fontSize * state.lineHeight;
+  const lines = wrapTextLines(state.quote, maxTextWidth);
+
+  // Compute total block size
+  const blockW = Math.min(maxTextWidth, Math.max(...lines.map(l=>ctx.measureText(l).width), 0));
+  const blockH = lines.length * lineHeightPx;
+
+  // Determine anchor (x,y) based on textAlign uses: left= start at x, center = center at x, right = end at x
+  let x = state.textX;
+  let y = state.textY;
+  // We store textY as the center of the block for intuitive dragging; so convert:
+  y = y - blockH/2;
+
+  // Background overlay behind text
+  if(state.overlayEnabled){
+    const rectPadX = padding, rectPadY = Math.floor(padding*0.8);
+    let rx, rw;
+    if(state.textAlign === 'left'){ rx = x - rectPadX; rw = blockW + rectPadX*2; }
+    else if(state.textAlign === 'right'){ rx = x - blockW - rectPadX; rw = blockW + rectPadX*2; }
+    else { // center
+      rx = x - (blockW/2) - rectPadX; rw = blockW + rectPadX*2;
+    }
+    const ry = y - rectPadY;
+    const rh = blockH + rectPadY*2;
+    ctx.save();
+    ctx.shadowColor = 'transparent';
+    ctx.globalAlpha = clamp(state.overlayOpacity, 0, 1);
+    ctx.fillStyle = state.overlayColor;
+    drawRoundedRect(rx, ry, rw, rh, Math.max(8, Math.floor(state.fontSize/3)));
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Draw each line
+  let ty = y;
+  for(const line of lines){
+    ctx.fillText(line, x, ty);
+    ty += lineHeightPx;
+  }
+  ctx.restore();
+
+  // Store last text bbox for hit-testing
+  lastTextBBox = {
+    x: (state.textAlign==='left' ? x : state.textAlign==='center' ? x - blockW/2 : x - blockW),
+    y: y,
+    w: blockW,
+    h: blockH
+  };
+}
+
+let lastTextBBox = {x:0,y:0,w:0,h:0};
+
+function drawCropOverlay(){
+  if(!state.cropMode) return;
+  if(!state.cropRect){
+    // Initialize to a centered rectangle
+    const w = Math.floor(canvas.width * 0.6);
+    const h = Math.floor(canvas.height * 0.6);
+    state.cropRect = { x: (canvas.width-w)/2, y: (canvas.height-h)/2, w, h };
+  }
+  const r = state.cropRect;
+
+  // If rotation is not 0, we inform and draw a basic overlay without handles
+  if(state.rotation !== 0){
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0,0,canvas.width, canvas.height);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8,6]);
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.restore();
+    return;
+  }
+
+  // Darken outside
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(0,0,canvas.width, canvas.height);
+  ctx.clearRect(r.x, r.y, r.w, r.h);
+  ctx.restore();
+
+  // Border
+  ctx.save();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8,6]);
+  ctx.strokeRect(r.x, r.y, r.w, r.h);
+  ctx.setLineDash([]);
+  // Handles
+  const handles = cropHandles(r);
+  ctx.fillStyle = '#7bc4ff';
+  for(const h of handles){
+    ctx.fillRect(h.x, h.y, h.s, h.s);
+  }
+  ctx.restore();
+
+  // Update crop preview
+  updateCropPreview();
+}
+
+function cropHandles(r){
+  const s = 10;
+  const hs = [
+    {name:'tl', x:r.x-s, y:r.y-s, s}, {name:'tm', x:r.x+r.w/2 - s/2, y:r.y-s, s}, {name:'tr', x:r.x+r.w, y:r.y-s, s},
+    {name:'ml', x:r.x-s, y:r.y+r.h/2 - s/2, s},                          {name:'mr', x:r.x+r.w, y:r.y+r.h/2 - s/2, s},
+    {name:'bl', x:r.x-s, y:r.y+r.h, s}, {name:'bm', x:r.x+r.w/2 - s/2, y:r.y+r.h, s}, {name:'br', x:r.x+r.w, y:r.y+r.h, s},
+  ];
+  return hs;
+}
+
+function handleAtPoint(x,y){
+  if(!state.cropRect) return null;
+  const hs = cropHandles(state.cropRect);
+  for(const h of hs){
+    if(x>=h.x && y>=h.y && x<=h.x+h.s && y<=h.y+h.s) return h.name;
+  }
+  // inside rect?
+  const r = state.cropRect;
+  if(x>=r.x && y>=r.y && x<=r.x+r.w && y<=r.y+r.h) return 'move';
+  return null;
+}
+
+function updateCropPreview(){
+  const r = state.cropRect;
+  if(!r || !state.img){
+    cropCtx.clearRect(0,0, cropPreviewCanvas.width, cropPreviewCanvas.height);
+    return;
+  }
+  // Only accurate when rotation=0 (as noted)
+  // Draw the region of the current rendered image proportionally using original image with current fit
+  const cw = canvas.width, ch = canvas.height;
+  const iw = state.imgNaturalW, ih = state.imgNaturalH;
+  const scale = Math.min(cw/iw, ch/ih);
+  const drawW = iw * scale, drawH = ih * scale;
+  const dx = (cw - drawW)/2, dy = (ch - drawH)/2;
+
+  // Map crop rect to image coordinates:
+  const sx = clamp((r.x - dx)/scale, 0, iw);
+  const sy = clamp((r.y - dy)/scale, 0, ih);
+  const sw = clamp(r.w/scale, 0, iw - sx);
+  const sh = clamp(r.h/scale, 0, ih - sy);
+
+  cropCtx.clearRect(0,0, cropPreviewCanvas.width, cropPreviewCanvas.height);
+  if(sw <= 0 || sh <= 0) return;
+
+  // Fit into preview while keeping aspect
+  const prW = cropPreviewCanvas.width;
+  const prH = cropPreviewCanvas.height;
+  const s2 = Math.min(prW/sw, prH/sh);
+  const dW = sw * s2;
+  const dH = sh * s2;
+  const pdx = (prW - dW)/2;
+  const pdy = (prH - dH)/2;
+
+  cropCtx.save();
+  // Apply image filters to preview too for consistency
+  const b = state.brightness/100; const c = state.contrast/100;
+  cropCtx.filter = `brightness(${b}) contrast(${c})`;
+  cropCtx.drawImage(state.img, sx, sy, sw, sh, pdx, pdy, dW, dH);
+  cropCtx.restore();
+}
+
+/* Main render */
+function render(){
+  if(!state.dirty) return;
+  state.dirty = false;
+  ctx.save();
+  // Background gradient always drawn first
+  drawGradientBackground();
+
+  // If image exists, draw it
+  if(state.img) drawImageTransformed();
+
+  // Draw text on top
+  drawText();
+
+  // Crop overlay if in crop mode
+  drawCropOverlay();
+
+  ctx.restore();
+}
+
+/* RAF loop for smoothness */
+function loop(){ render(); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+
+/* ---------------------------
+   Interactions
+---------------------------- */
+// Dropzone
+dropzone.addEventListener('click', ()=> fileInput.click());
+btnOpenPicker.addEventListener('click', ()=> fileInput.click());
+dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', (e)=>{
+  e.preventDefault(); dropzone.classList.remove('dragover');
+  const file = e.dataTransfer.files?.[0];
+  if(file) loadImageFromFile(file);
+});
+fileInput.addEventListener('change', (e)=>{
+  const file = e.target.files?.[0];
+  if(file) loadImageFromFile(file);
+});
+
+// Camera
+btnStartCam.addEventListener('click', startCamera);
+btnStopCam.addEventListener('click', stopCamera);
+btnCapture.addEventListener('click', captureFromVideo);
+
+// Quote actions
+btnGenerateQuote.addEventListener('click', ()=>{
+  showSpinner(true);
+  setTimeout(()=>{ pickRandomQuote(); showSpinner(false); state.dirty = true; }, 600);
+});
+categorySel.addEventListener('change', ()=>{
+  state.category = categorySel.value;
+  pickRandomQuote();
+  state.dirty = true; saveSettings();
+});
+quoteText.addEventListener('input', ()=>{
+  state.quote = quoteText.value;
+  state.dirty = true; saveSettings();
+});
+textAlignSel.addEventListener('change', ()=>{
+  state.textAlign = textAlignSel.value;
+  state.dirty = true; saveSettings();
+});
+
+// Style controls
+fontFamilySel.addEventListener('change', ()=>{ state.fontFamily = fontFamilySel.value; state.dirty = true; saveSettings(); });
+fontSizeRange.addEventListener('input', ()=>{
+  state.fontSize = parseInt(fontSizeRange.value,10) || 48;
+  fontSizeVal.textContent = state.fontSize;
+  state.dirty = true; saveSettings();
+});
+lineHeightRange.addEventListener('input', ()=>{
+  state.lineHeight = parseFloat(lineHeightRange.value);
+  lineHeightVal.textContent = state.lineHeight.toFixed(2);
+  state.dirty = true; saveSettings();
+});
+textColorInput.addEventListener('input', ()=>{ state.textColor = textColorInput.value; state.dirty = true; saveSettings(); });
+textShadowToggle.addEventListener('change', ()=>{ state.textShadow = !!textShadowToggle.checked; state.dirty = true; saveSettings(); });
+overlayToggle.addEventListener('change', ()=>{ state.overlayEnabled = !!overlayToggle.checked; state.dirty = true; saveSettings(); });
+overlayColor.addEventListener('input', ()=>{ state.overlayColor = overlayColor.value; state.dirty = true; saveSettings(); });
+overlayOpacity.addEventListener('input', ()=>{
+  state.overlayOpacity = parseFloat(overlayOpacity.value);
+  overlayOpacityVal.textContent = state.overlayOpacity.toFixed(2);
+  state.dirty = true; saveSettings();
+});
+
+// Adjustments
+brightnessRange.addEventListener('input', ()=>{
+  state.brightness = parseInt(brightnessRange.value,10);
+  brightnessVal.textContent = state.brightness;
+  state.dirty = true; saveSettings();
+});
+contrastRange.addEventListener('input', ()=>{
+  state.contrast = parseInt(contrastRange.value,10);
+  contrastVal.textContent = state.contrast;
+  state.dirty = true; saveSettings();
+});
+rotationRange.addEventListener('input', ()=>{
+  state.rotation = parseInt(rotationRange.value,10);
+  rotationVal.textContent = state.rotation;
+  cropNote.style.display = (state.rotation !== 0) ? 'block' : 'none';
+  state.dirty = true; saveSettings();
+});
+btnRot90.addEventListener('click', ()=>{ state.rotation = 90; rotationRange.value=90; rotationVal.textContent = '90'; state.dirty = true; saveSettings(); });
+btnRot180.addEventListener('click', ()=>{ state.rotation = 180; rotationRange.value=180; rotationVal.textContent = '180'; state.dirty = true; saveSettings(); });
+btnRot270.addEventListener('click', ()=>{ state.rotation = 270; rotationRange.value=270; rotationVal.textContent = '270'; state.dirty = true; saveSettings(); });
+
+// Crop controls
+btnToggleCrop.addEventListener('click', ()=>{
+  state.cropMode = !state.cropMode;
+  if(state.cropMode && !state.cropRect){
+    const w = Math.floor(canvas.width*0.6);
+    const h = Math.floor(canvas.height*0.6);
+    state.cropRect = {x:(canvas.width-w)/2, y:(canvas.height-h)/2, w, h};
+  }
+  state.dirty = true;
+});
+btnCancelCrop.addEventListener('click', ()=>{
+  state.cropRect = null;
+  state.cropMode = false;
+  state.dirty = true;
+});
+btnApplyCrop.addEventListener('click', ()=>{
+  if(!state.img || !state.cropRect){ showCanvasMsg('No crop to apply.'); return; }
+  if(state.rotation !== 0){
+    showCanvasMsg('Set rotation to 0° before applying crop.');
+    return;
+  }
+  // Map crop to image coords
+  const cw = canvas.width, ch = canvas.height;
+  const iw = state.imgNaturalW, ih = state.imgNaturalH;
+  const scale = Math.min(cw/iw, ch/ih);
+  const drawW = iw * scale, drawH = ih * scale;
+  const dx = (cw - drawW)/2, dy = (ch - drawH)/2;
+
+  const r = state.cropRect;
+  const sx = clamp((r.x - dx)/scale, 0, iw);
+  const sy = clamp((r.y - dy)/scale, 0, ih);
+  const sw = clamp(r.w/scale, 1, iw - sx);
+  const sh = clamp(r.h/scale, 1, ih - sy);
+
+  const off = document.createElement('canvas');
+  off.width = Math.max(1, Math.floor(sw));
+  off.height = Math.max(1, Math.floor(sh));
+  const octx = off.getContext('2d');
+  // Apply brightness/contrast to cropped image content
+  const b = state.brightness/100; const c = state.contrast/100;
+  octx.filter = `brightness(${b}) contrast(${c})`;
+  octx.drawImage(state.img, sx, sy, sw, sh, 0, 0, off.width, off.height);
+
+  const img = new Image();
+  img.onload = ()=>{
+    state.img = img;
+    state.imgNaturalW = img.naturalWidth;
+    state.imgNaturalH = img.naturalHeight;
+    state.cropMode = false;
+    state.cropRect = null;
+    fitCanvasToContainer();
+    state.textX = canvas.width/2; state.textY = canvas.height/2;
+    state.dirty = true;
+    imageInfo.textContent = `Image: ${state.imgNaturalW}×${state.imgNaturalH} • Canvas: ${state.canvasW}×${state.canvasH}`;
+    saveSettings();
+  };
+  img.src = off.toDataURL('image/png');
+});
+
+// Random style
+btnRandomStyle.addEventListener('click', ()=>{
+  const fonts = ["Arial","Verdana","Trebuchet MS","Georgia","Times New Roman","Courier New","System UI","Impact"];
+  state.fontFamily = fonts[Math.floor(Math.random()*fonts.length)];
+  state.fontSize = Math.floor(28 + Math.random()*72);
+  state.textColor = randomReadableColor();
+  state.textShadow = Math.random() > 0.35;
+  state.textAlign = ['left','center','right'][Math.floor(Math.random()*3)];
+  state.overlayEnabled = Math.random() > 0.5;
+  state.overlayColor = randomRGBAColor(0.9);
+  state.overlayOpacity = +(0.25 + Math.random()*0.5).toFixed(2);
+  state.brightness = Math.floor(80 + Math.random()*50);
+  state.contrast = Math.floor(90 + Math.random()*40);
+  setUIFromState();
+  state.dirty = true; saveSettings();
+});
+
+// Reset
+btnReset.addEventListener('click', ()=>{
+  const keepImg = state.img;
+  const keepW = state.imgNaturalW, keepH = state.imgNaturalH;
+  const keepGrad = state.gradient;
+  Object.assign(state, {
+    img: keepImg,
+    imgNaturalW: keepW, imgNaturalH: keepH,
+    fontFamily:'Arial', fontSize:48, textColor:'#ffffff', lineHeight:1.2, textShadow:true,
+    textAlign:'center', overlayEnabled:false, overlayColor:'#000000', overlayOpacity:0.45,
+    brightness:100, contrast:100, rotation:0,
+    textX: canvas.width/2, textY: canvas.height/2,
+    cropMode:false, cropRect:null,
+    gradient: keepGrad
+  });
+  setUIFromState();
+  state.dirty = true; saveSettings();
+});
+btnHardReset.addEventListener('click', ()=>{
+  localStorage.removeItem(LS_KEY);
+  location.reload();
+});
+
+// Theme & gradient
+btnDark.addEventListener('click', ()=>{
+  const current = appEl.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  appEl.setAttribute('data-theme', next);
+  btnDark.textContent = next === 'dark' ? '🌓 Light' : '🌒 Dark';
+  saveSettings();
+});
+btnGradient.addEventListener('click', ()=>{
+  state.gradient = randomGradient();
+  applyPageGradient();
+  state.dirty = true; saveSettings();
+});
+
+// Download
+btnDownload.addEventListener('click', ()=>{
+  // Render current canvas to png
+  const data = canvas.toDataURL('image/png');
+  const a = document.createElement('a');
+  const now = new Date();
+  const ts = now.toISOString().replace(/[-:]/g,'').split('.')[0];
+  a.href = data;
+  a.download = `motivation-${ts}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
+
+// Canvas interactions: drag text & crop
+canvas.addEventListener('mousedown', pointerDown);
+canvas.addEventListener('touchstart', pointerDown, {passive:false});
+window.addEventListener('mousemove', pointerMove);
+window.addEventListener('touchmove', pointerMove, {passive:false});
+window.addEventListener('mouseup', pointerUp);
+window.addEventListener('touchend', pointerUp);
+
+canvas.addEventListener('dblclick', ()=>{
+  // Center text
+  state.textX = canvas.width/2;
+  state.textY = canvas.height/2;
+  state.dirty = true; saveSettings();
+});
+
+// Keyboard shortcuts
+window.addEventListener('keydown', (e)=>{
+  // Download shortcut
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase()==='s'){
+    e.preventDefault();
+    btnDownload.click();
+    return;
+  }
+  if(e.target && ['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return; // don't interfere when typing
+
+  const step = e.shiftKey ? 10 : 2;
+  switch(e.key.toLowerCase()){
+    case 'g': btnGenerateQuote.click(); break;
+    case 'r': btnRandomStyle.click(); break;
+    case 'd': btnDark.click(); break;
+    case '+':
+    case '=':
+      state.fontSize = clamp(state.fontSize+2, 16, 120); setUIFromState(); state.dirty = true; saveSettings(); break;
+    case '-':
+    case '_':
+      state.fontSize = clamp(state.fontSize-2, 16, 120); setUIFromState(); state.dirty = true; saveSettings(); break;
+    case 'arrowup': state.textY = clamp(state.textY - step, 0, canvas.height); state.dirty = true; saveSettings(); break;
+    case 'arrowdown': state.textY = clamp(state.textY + step, 0, canvas.height); state.dirty = true; saveSettings(); break;
+    case 'arrowleft': state.textX = clamp(state.textX - step, 0, canvas.width); state.dirty = true; saveSettings(); break;
+    case 'arrowright': state.textX = clamp(state.textX + step, 0, canvas.width); state.dirty = true; saveSettings(); break;
+    case '0': // reset rotation
+      state.rotation = 0; rotationRange.value = 0; rotationVal.textContent = '0'; state.dirty = true; saveSettings();
+      break;
+  }
+});
+
+/* ---------------------------
+   Pointer handlers
+---------------------------- */
+function getPointerPos(e){
+  const rect = canvas.getBoundingClientRect();
+  let clientX, clientY;
+  if(e.touches && e.touches.length){
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  }else{
+    clientX = e.clientX; clientY = e.clientY;
+  }
+  const x = (clientX - rect.left) * (canvas.width / rect.width);
+  const y = (clientY - rect.top) * (canvas.height / rect.height);
+  return {x,y};
+}
+
+function pointerDown(e){
+  e.preventDefault();
+  const {x,y} = getPointerPos(e);
+  if(state.cropMode){
+    if(state.rotation !== 0) { state.dragCrop = false; return; }
+    // Determine handle or move
+    const h = handleAtPoint(x,y);
+    if(h){
+      state.dragCrop = true; state.dragHandle = h;
+      state.dragStart = {x,y, rect:{...state.cropRect}};
+      return;
+    }
+  }else{
+    // Check text bbox
+    const b = lastTextBBox;
+    if(x>=b.x && y>=b.y && x<=b.x+b.w && y<=b.y+b.h){
+      state.draggingText = true;
+      // For dragging, we store offset from anchor
+      let anchorX;
+      if(state.textAlign==='left') anchorX = b.x;
+      else if(state.textAlign==='center') anchorX = b.x + b.w/2;
+      else anchorX = b.x + b.w;
+      const anchorY = b.y + b.h/2;
+      state.dragOffsetX = x - anchorX;
+      state.dragOffsetY = y - anchorY;
+    }
+  }
+}
+
+function pointerMove(e){
+  if(!state.draggingText && !state.dragCrop) return;
+  const {x,y} = getPointerPos(e);
+  if(state.draggingText){
+    // Anchor is based on alignment; we place anchor at pointer - offset
+    const anchorX = x - state.dragOffsetX;
+    const anchorY = y - state.dragOffsetY;
+    state.textX = clamp(anchorX, 0, canvas.width);
+    state.textY = clamp(anchorY, 0, canvas.height);
+    state.dirty = true;
+    saveSettings();
+  }else if(state.dragCrop && state.cropRect && state.dragStart){
+    const dx = x - state.dragStart.x;
+    const dy = y - state.dragStart.y;
+    let {x:rx, y:ry, w:rw, h:rh} = state.dragStart.rect;
+    const minSize = 20;
+    switch(state.dragHandle){
+      case 'move':
+        rx += dx; ry += dy;
+        break;
+      case 'tl':
+        rx += dx; ry += dy; rw -= dx; rh -= dy; break;
+      case 'tm':
+        ry += dy; rh -= dy; break;
+      case 'tr':
+        ry += dy; rw += dx; rh -= dy; break;
+      case 'ml':
+        rx += dx; rw -= dx; break;
+      case 'mr':
+        rw += dx; break;
+      case 'bl':
+        rx += dx; rw -= dx; rh += dy; break;
+      case 'bm':
+        rh += dy; break;
+      case 'br':
+        rw += dx; rh += dy; break;
+    }
+    // Constrain
+    if(rw < minSize){ const diff = minSize - rw; rw = minSize; if(['tl','ml','bl'].includes(state.dragHandle)) rx -= diff; }
+    if(rh < minSize){ const diff = minSize - rh; rh = minSize; if(['tl','tm','tr'].includes(state.dragHandle)) ry -= diff; }
+    rx = clamp(rx, 0, canvas.width - rw);
+    ry = clamp(ry, 0, canvas.height - rh);
+    state.cropRect = {x:rx, y:ry, w:rw, h:rh};
+    state.dirty = true;
+  }
+}
+
+function pointerUp(){
+  state.draggingText = false;
+  state.dragCrop = false;
+  state.dragHandle = null;
+}
+
+/* ---------------------------
+   Color helpers
+---------------------------- */
+function randomReadableColor(){
+  // Generate a color with sufficient contrast against typical photos/gradients: prefer light tones
+  const h = Math.floor(Math.random()*360);
+  const s = Math.floor(40 + Math.random()*60);
+  const l = Math.random() > 0.5 ? Math.floor(80 + Math.random()*15) : Math.floor(15 + Math.random()*20);
+  // Convert to hex using canvas to parse (safe)
+  const tmp = document.createElement('span');
+  tmp.style.color = `hsl(${h} ${s}% ${l}%)`;
+  document.body.appendChild(tmp);
+  const rgb = getComputedStyle(tmp).color;
+  document.body.removeChild(tmp);
+  return rgbToHex(rgb);
+}
+function randomRGBAColor(alpha=0.6){
+  const r = Math.floor(Math.random()*255);
+  const g = Math.floor(Math.random()*255);
+  const b = Math.floor(Math.random()*255);
+  const a = clamp(alpha,0,1);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function rgbToHex(rgb){
+  const m = rgb.match(/\d+/g);
+  if(!m) return '#ffffff';
+  const [r,g,b] = m.map(n=>parseInt(n,10));
+  const toHex = n => ('0'+n.toString(16)).slice(-2);
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+/* ---------------------------
+   Init
+---------------------------- */
+function init(){
+  if(TOTAL_QUOTES < 100){
+    showError('Quote list did not load fully. Please refresh.'); // very unlikely
+  }
+  loadSettings();
+  setUIFromState();
+  applyPageGradient();
+  fitCanvasToContainer();
+  // Seed quote field
+  quoteText.value = state.quote;
+  state.dirty = true;
+  window.addEventListener('resize', ()=>{
+    fitCanvasToContainer();
+  });
+}
+init();
+</script>
+</body>
+</html>
